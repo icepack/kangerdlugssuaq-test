@@ -28,11 +28,4 @@ jobs:
         env:
           EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME }}
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
-        run: |
-          python initialize.py
-          python make_plot.py
-      - name: Upload result
-        uses: actions/upload-artifact@v3
-        with:
-          name: kangerdlugssuaq
-          path: kangerdlugssuaq.png
+        run: python initialize.py
