@@ -18,7 +18,7 @@ jobs:
         run: |
           apt update
           apt install -yq patchelf
-          pip install netCDF4
+          pip install netCDF4 matplotlib
           pip install git+https://github.com/icepack/Trilinos.git
           pip install git+https://github.com/icepack/pyrol.git
           pip install git+https://github.com/icepack/icepack.git
