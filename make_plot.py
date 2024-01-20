@@ -1,4 +1,4 @@
-import maptlotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import firedrake
 
 filename = "kangerdlugssuaq-initial.h5"
