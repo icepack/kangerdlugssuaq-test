@@ -1,0 +1,28 @@
+name: 'Run tests'
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: docker.io/firedrakeproject/firedrake-vanilla:2023-09
+      options: --user root
+    steps:
+      - name: Activate Firedrake virtual environment
+        run: |
+          . /home/firedrake/firedrake/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -yq patchelf
+          pip install netCDF4
+          pip install git+https://github.com/icepack/Trilinos.git
+          pip install git+https://github.com/icepack/pyrol.git
+          pip install git+https://github.com/icepack/icepack.git
+      - name: Check out git repository
+        uses: actions/checkout@v3
+      - name: run tests
+        env:
+          EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME }}
+          EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
+        run: python initialize.py
