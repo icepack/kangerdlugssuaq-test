@@ -2,9 +2,12 @@ name: 'Run tests'
 on: [push, pull_request]
 jobs:
   test:
+    strategy:
+      matrix:
+        version: [2023-09, 2023-10, 2023-11, 2023-12]
     runs-on: ubuntu-latest
     container:
-      image: docker.io/firedrakeproject/firedrake-vanilla:2023-09
+      image: docker.io/firedrakeproject/firedrake-vanilla:${{ matrix.version }}
       options: --user root
     steps:
       - name: Activate Firedrake virtual environment
