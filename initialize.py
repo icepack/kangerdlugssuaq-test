@@ -124,10 +124,19 @@ v_o = firedrake.Function(Δ)
 σ_x = firedrake.Function(Δ)
 σ_y = firedrake.Function(Δ)
 
-u_o.dat.data[:] = velocity_data["vx"][indices[:, 1], indices[:, 0]]
-v_o.dat.data[:] = velocity_data["vy"][indices[:, 1], indices[:, 0]]
-σ_x.dat.data[:] = velocity_data["ex"][indices[:, 1], indices[:, 0]]
-σ_y.dat.data[:] = velocity_data["ey"][indices[:, 1], indices[:, 0]]
+try:
+    permutation = point_set.topology._dm_renumbering.indices[:point_set.cell_set.size]
+    u_o.dat.data[:] = velocity_data["vx"][indices[:, 1], indices[:, 0]][permutation]
+    v_o.dat.data[:] = velocity_data["vy"][indices[:, 1], indices[:, 0]][permutation]
+    σ_x.dat.data[:] = velocity_data["ex"][indices[:, 1], indices[:, 0]][permutation]
+    σ_y.dat.data[:] = velocity_data["ey"][indices[:, 1], indices[:, 0]][permutation]
+    print("Using renumbering of vertices!")
+except AttributeError:
+    u_o.dat.data[:] = velocity_data["vx"][indices[:, 1], indices[:, 0]]
+    v_o.dat.data[:] = velocity_data["vy"][indices[:, 1], indices[:, 0]]
+    σ_x.dat.data[:] = velocity_data["ex"][indices[:, 1], indices[:, 0]]
+    σ_y.dat.data[:] = velocity_data["ey"][indices[:, 1], indices[:, 0]]
+    print("No vertex renumbering!")
 
 problem = icepack.statistics.StatisticsProblem(
     simulation=lambda u: u.copy(deepcopy=True),
