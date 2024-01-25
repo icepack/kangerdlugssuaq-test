@@ -11,6 +11,8 @@ import icepack
 from icepack.constants import (
     ice_density as ρ_I, gravity as g, weertman_sliding_law as m
 )
+import warnings
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--outline")
@@ -99,6 +101,26 @@ point_set = firedrake.VertexOnlyMesh(
 )
 
 Δ = firedrake.FunctionSpace(point_set, "DG", 0)
+if hasattr(point_set, "input_ordering"):
+    print("Using vertex re-numbering!")
+    Δ_input = firedrake.FunctionSpace(point_set.input_ordering, "DG", 0)
+    def gridded_to_point_set(field):
+        f_input = firedrake.Function(Δ_input)
+        f_input.dat.data[:] = field[indices[:, 1], indices[:, 0]]
+        f_output = firedrake.Function(Δ)
+        f_output.interpolate(f_input)
+        return f_output
+else:
+    print("No vertex renumbering available!")
+    def gridded_to_point_set(field):
+        f = firedrake.Function(Δ)
+        f.dat.data[:] = field[indices[:, 1], indices[:, 0]]
+        return f
+
+u_o = gridded_to_point_set(velocity_data["vx"])
+v_o = gridded_to_point_set(velocity_data["vy"])
+σ_x = gridded_to_point_set(velocity_data["ex"])
+σ_y = gridded_to_point_set(velocity_data["ey"])
 
 # Set up and solve a data assimilation problem to interpolate the sparse
 # velocity data to the velocity space. This step is necessary because the
@@ -118,25 +140,6 @@ def regularization(u):
     Ω = Constant(area)
     α = Constant(80.0)
     return 0.5 * α**2 / Ω * inner(grad(u), grad(u)) * dx
-
-u_o = firedrake.Function(Δ)
-v_o = firedrake.Function(Δ)
-σ_x = firedrake.Function(Δ)
-σ_y = firedrake.Function(Δ)
-
-try:
-    permutation = point_set.topology._dm_renumbering.indices[:point_set.cell_set.size]
-    u_o.dat.data[:] = velocity_data["vx"][indices[:, 1], indices[:, 0]][permutation]
-    v_o.dat.data[:] = velocity_data["vy"][indices[:, 1], indices[:, 0]][permutation]
-    σ_x.dat.data[:] = velocity_data["ex"][indices[:, 1], indices[:, 0]][permutation]
-    σ_y.dat.data[:] = velocity_data["ey"][indices[:, 1], indices[:, 0]][permutation]
-    print("Using renumbering of vertices!")
-except AttributeError:
-    u_o.dat.data[:] = velocity_data["vx"][indices[:, 1], indices[:, 0]]
-    v_o.dat.data[:] = velocity_data["vy"][indices[:, 1], indices[:, 0]]
-    σ_x.dat.data[:] = velocity_data["ex"][indices[:, 1], indices[:, 0]]
-    σ_y.dat.data[:] = velocity_data["ey"][indices[:, 1], indices[:, 0]]
-    print("No vertex renumbering!")
 
 problem = icepack.statistics.StatisticsProblem(
     simulation=lambda u: u.copy(deepcopy=True),
